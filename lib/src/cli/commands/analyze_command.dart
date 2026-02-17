@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:flutter_doctor_ai/src/analyzer/analysis_engine.dart';
+import 'package:flutter_doctor_ai/src/models/finding.dart';
 import 'package:flutter_doctor_ai/src/scanner/ast_parser.dart';
 import 'package:flutter_doctor_ai/src/scanner/project_scanner.dart';
 import 'package:flutter_doctor_ai/src/utils/helpers.dart';
@@ -33,14 +35,7 @@ class AnalyzeCommand extends Command<int> {
     try {
       final projectInfo = await ProjectScanner().scan(projectPath);
 
-      if (verbose) {
-        print('📄 Files found:');
-        for (var file in projectInfo.files) {
-          print('   - ${file.name} (${file.linesOfCode} lines)');
-        }
-        print('');
-      }
-
+      // Parse files
       final astParser = AstParser();
       int totalClasses = 0;
       int totalWidgets = 0;
@@ -58,6 +53,11 @@ class AnalyzeCommand extends Command<int> {
         }
       }
 
+      // Run analysis
+      final engine = AnalysisEngine();
+      final findings = engine.analyzeProject(projectInfo.files);
+
+      // Calculate stats
       int avgLinesPerFile = projectInfo.totalFiles > 0
           ? (projectInfo.totalLinesOfCode / projectInfo.totalFiles).round()
           : 0;
@@ -74,6 +74,7 @@ class AnalyzeCommand extends Command<int> {
             ..sort((a, b) => b.linesOfCode.compareTo(a.linesOfCode));
       final largestFiles = sortedFiles.take(5);
 
+      // Print results
       print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       print('📦  PROJECT INFO');
       print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -108,6 +109,106 @@ class AnalyzeCommand extends Command<int> {
 
       print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       print('⏱️  Scan completed in ${formatDuration(projectInfo.scanTime)}');
+      print('');
+
+      // Issues section
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      print('🔎  ISSUES FOUND');
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      if (findings.isEmpty) {
+        print('  ✨ No issues found! Great job!');
+      } else {
+        print('  Found ${findings.length} issue(s)');
+        print('');
+
+        // Count by severity
+        int errors = findings.where((f) => f.severity == Severity.error).length;
+        int warnings = findings
+            .where((f) => f.severity == Severity.warning)
+            .length;
+        int infos = findings.where((f) => f.severity == Severity.info).length;
+
+        print('  Summary:');
+        print('    ❌ Errors:   $errors');
+        print('    ⚠️  Warnings: $warnings');
+        print('    ℹ️  Info:     $infos');
+        print('');
+
+        // Group findings by rule
+        Map<String, List<Finding>> findingsByRule = {};
+        for (var finding in findings) {
+          findingsByRule.putIfAbsent(finding.rule, () => []).add(finding);
+        }
+
+        print('  By Rule:');
+        for (var entry in findingsByRule.entries) {
+          final ruleName = entry.key;
+          final issues = entry.value;
+
+          print('    • $ruleName (${issues.length} issues):');
+
+          for (var issue in issues) {
+            // Extract file name and path
+            final fullPath = issue.filePath;
+            final fileName = fullPath.split('/').last;
+            print('        - $fileName');
+          }
+        }
+        print('');
+        // Top offenders (only for large_build_method)
+        final largeBuildFindings = findingsByRule['large_build_method'] ?? [];
+        if (largeBuildFindings.isNotEmpty) {
+          print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          print('🚨  TOP OFFENDERS (Large Build Methods)');
+          print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+          final sortedLargeBuild = [...largeBuildFindings]
+            ..sort((a, b) {
+              final aLines = extractLineCount(a.message);
+              final bLines = extractLineCount(b.message);
+              return bLines.compareTo(aLines);
+            });
+
+          final topOffenders = sortedLargeBuild.take(5);
+          for (var finding in topOffenders) {
+            final fileName = finding.filePath.split('/').last;
+            final lines = extractLineCount(finding.message);
+            print('  • $fileName — $lines lines');
+          }
+          print('');
+        }
+
+        // Verbose: show all issues grouped by rule
+        if (verbose) {
+          print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          print('📋  ALL ISSUES');
+          print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+          for (var entry in findingsByRule.entries) {
+            print('');
+            print('  📌 ${entry.key} (${entry.value.length} issues)');
+            print('  ─────────────────────────────────');
+
+            for (var finding in entry.value) {
+              String icon = finding.severity == Severity.error
+                  ? '❌'
+                  : finding.severity == Severity.warning
+                  ? '⚠️'
+                  : 'ℹ️';
+
+              final fileName = finding.filePath.split('/').last;
+              print('  $icon $fileName:${finding.lineNumber}');
+              print('     ${finding.message}');
+              if (finding.suggestion != null) {
+                print('     💡 ${finding.suggestion}');
+              }
+            }
+          }
+        } else {
+          print('  💡 Run with --verbose to see all issues');
+        }
+      }
 
       return 0;
     } catch (e) {

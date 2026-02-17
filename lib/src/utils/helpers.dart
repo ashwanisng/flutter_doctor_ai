@@ -2,7 +2,7 @@
 String formatNumber(int num) {
   return num.toString().replaceAllMapped(
     RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-        (match) => '${match[1]},',
+    (match) => '${match[1]},',
   );
 }
 
@@ -23,3 +23,11 @@ String formatDuration(Duration duration) {
   }
   return '${(duration.inMilliseconds / 1000).toStringAsFixed(2)}s';
 }
+
+int extractLineCount(String message) {
+  // Extract number from "Build method is 648 lines long..."
+  final match = RegExp(r'is (\d+) lines').firstMatch(message);
+  return match != null ? int.parse(match.group(1)!) : 0;
+}
+
+enum Severity { info, warning, error }
