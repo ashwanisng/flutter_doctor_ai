@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:flutter_doctor_ai/src/analyzer/analysis_engine.dart';
 import 'package:flutter_doctor_ai/src/models/finding.dart';
+import 'package:flutter_doctor_ai/src/scoring/health_score.dart';
 import 'package:flutter_doctor_ai/src/scanner/ast_parser.dart';
 import 'package:flutter_doctor_ai/src/scanner/project_scanner.dart';
 import 'package:flutter_doctor_ai/src/utils/helpers.dart';
@@ -141,19 +142,39 @@ class AnalyzeCommand extends Command<int> {
           findingsByRule.putIfAbsent(finding.rule, () => []).add(finding);
         }
 
+        final scorer = HealthScorer(
+          totalFiles: projectInfo.totalFiles,
+          totalLines: projectInfo.totalLinesOfCode,
+          findings: findings,
+        );
+        final healthScore = scorer.calculate();
+
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        print('💯  HEALTH SCORE');
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        print('');
+        print(
+          '       ${healthScore.emoji}  ${healthScore.score}/100 (Grade: ${healthScore.grade})',
+        );
+        print('');
+        print('  ${healthScore.message}');
+        print(
+          '  Issues per 1K lines: ${healthScore.issuesPerKLOC.toStringAsFixed(1)}',
+        );
+        print('');
+
         print('  By Rule:');
         for (var entry in findingsByRule.entries) {
-          final ruleName = entry.key;
-          final issues = entry.value;
+          final ruleName = entry.key.padRight(25);
+          final issueCount = entry.value.length;
+          final fileCount = entry.value.map((i) => i.filePath).toSet().length;
 
-          print('    • $ruleName (${issues.length} issues):');
+          final issueText = issueCount == 1 ? 'issue' : 'issues';
+          final fileText = fileCount == 1 ? 'file' : 'files';
 
-          for (var issue in issues) {
-            // Extract file name and path
-            final fullPath = issue.filePath;
-            final fileName = fullPath.split('/').last;
-            print('        - $fileName');
-          }
+          print(
+            '    • $ruleName $issueCount $issueText ($fileCount $fileText)',
+          );
         }
         print('');
         // Top offenders (only for large_build_method)
