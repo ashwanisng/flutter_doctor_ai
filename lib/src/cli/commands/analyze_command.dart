@@ -1,7 +1,10 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:flutter_doctor_ai/src/ai/ai_factory.dart';
 import 'package:flutter_doctor_ai/src/analyzer/analysis_engine.dart';
+import 'package:flutter_doctor_ai/src/cli/ai_prompt.dart';
+import 'package:flutter_doctor_ai/src/models/ai_config.dart';
 import 'package:flutter_doctor_ai/src/models/finding.dart';
 import 'package:flutter_doctor_ai/src/scoring/health_score.dart';
 import 'package:flutter_doctor_ai/src/scanner/ast_parser.dart';
@@ -16,6 +19,21 @@ class AnalyzeCommand extends Command<int> {
       defaultsTo: false,
       help: 'Show detailed analysis output',
     );
+
+    argParser.addFlag(
+      'ai',
+      defaultsTo: false,
+      help: 'Get AI-powered fix suggestions',
+    );
+    argParser.addOption(
+      'provider',
+      abbr: 'p',
+      defaultsTo: 'groq',
+      allowed: ['groq', 'gemini', 'openai', 'anthropic'],
+      help: 'AI provider to use',
+    );
+    argParser.addOption('api-key', help: 'API key for the AI provider');
+    argParser.addOption('model', abbr: 'm', help: 'AI model to use (optional)');
   }
 
   @override
@@ -30,6 +48,10 @@ class AnalyzeCommand extends Command<int> {
         ? '.'
         : argResults!.rest.first;
     bool verbose = argResults!['verbose'] as bool;
+    bool useAI = argResults!['ai'] as bool;
+    String provider = argResults!['provider'] as String;
+    String? apiKey = argResults!['api-key'] as String?;
+    String? model = argResults!['model'] as String?;
 
     print('🔍 Analyzing Flutter project...\n');
 
@@ -229,6 +251,85 @@ class AnalyzeCommand extends Command<int> {
         } else {
           print('  💡 Run with --verbose to see all issues');
         }
+
+        // AI suggestions
+
+        if (useAI) {
+          AIConfig? aiConfig;
+
+          // If API key provided via flag, use it directly
+          if (apiKey != null) {
+            aiConfig = AIConfig(
+              provider: provider,
+              model:
+                  argResults!['model'] as String? ?? getDefaultModel(provider),
+              apiKey: apiKey,
+            );
+          } else {
+            // Interactive mode
+            aiConfig = await AiPrompt.configure();
+          }
+
+          if (aiConfig == null) {
+            print('AI configuration cancelled.');
+            return 0;
+          }
+
+          print('');
+          print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          print('🤖  AI SUGGESTIONS');
+          print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          print('');
+          print('  Using ${aiConfig.provider} with ${aiConfig.model}');
+          print('');
+
+          try {
+            final aiProvider = AIFactory.create(
+              aiConfig.provider,
+              aiConfig.apiKey,
+            );
+
+            final topIssues = findings.take(3).toList();
+
+            for (var i = 0; i < topIssues.length; i++) {
+              final finding = topIssues[i];
+              final fileName = finding.filePath.split('/').last;
+
+              print(
+                '  [${i + 1}/${topIssues.length}] $fileName:${finding.lineNumber}',
+              );
+              print('  Issue: ${finding.message}');
+              print('');
+
+              final codeSnippet = _getCodeSnippet(
+                finding.filePath,
+                finding.lineNumber,
+              );
+
+              final suggestion = await aiProvider.getSuggestion(
+                issue: finding.message,
+                code: codeSnippet,
+                filePath: finding.filePath,
+                model: aiConfig.model,
+              );
+
+              print('  💡 AI Suggestion:');
+              for (var line in suggestion.split('\n')) {
+                print('     $line');
+              }
+              print('');
+              print('  ─────────────────────────────────');
+              print('');
+            }
+
+            if (findings.length > 3) {
+              print('  ℹ️  Showing suggestions for top 3 issues only.');
+              print('     Total issues: ${findings.length}');
+            }
+          } catch (e) {
+            stderr.writeln('  ❌ AI Error: $e');
+          }
+        }
       }
 
       return 0;
@@ -236,5 +337,29 @@ class AnalyzeCommand extends Command<int> {
       stderr.writeln('Error: $e');
       return 1;
     }
+  }
+}
+
+String _getCodeSnippet(String filePath, int lineNumber) {
+  try {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      return '// Could not read file';
+    }
+
+    final lines = file.readAsLinesSync();
+
+    final start = (lineNumber - 6).clamp(0, lines.length);
+    final end = (lineNumber + 5).clamp(0, lines.length);
+
+    final snippet = <String>[];
+    for (var i = start; i < end; i++) {
+      final marker = (i + 1 == lineNumber) ? '>>> ' : '    ';
+      snippet.add('$marker${i + 1}: ${lines[i]}');
+    }
+
+    return snippet.join('\n');
+  } catch (e) {
+    return '// Error reading file: $e';
   }
 }

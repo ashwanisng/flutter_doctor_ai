@@ -1,3 +1,5 @@
+enum Severity { info, warning, error }
+
 /// Format number with commas (e.g., 24342 → "24,342")
 String formatNumber(int num) {
   return num.toString().replaceAllMapped(
@@ -30,4 +32,56 @@ int extractLineCount(String message) {
   return match != null ? int.parse(match.group(1)!) : 0;
 }
 
-enum Severity { info, warning, error }
+String getDefaultModel(String provider) {
+  switch (provider) {
+    case 'groq':
+      return 'llama-3.3-70b-versatile';
+    case 'gemini':
+      return 'gemini-1.5-flash';
+    case 'openai':
+      return 'gpt-4o-mini';
+    case 'anthropic':
+      return 'claude-3-5-sonnet-20241022';
+    default:
+      return '';
+  }
+}
+
+bool validateApiKey(String provider, String apiKey) {
+  switch (provider) {
+    case 'groq':
+      if (!apiKey.startsWith('gsk_')) {
+        print('  ❌ Groq API key should start with "gsk_"');
+        return false;
+      }
+      if (apiKey.length < 20) {
+        print('  ❌ API key seems too short. Please check and try again.');
+        return false;
+      }
+      return true;
+
+    case 'gemini':
+      if (apiKey.length < 20) {
+        print('  ❌ API key seems too short. Please check and try again.');
+        return false;
+      }
+      return true;
+
+    case 'openai':
+      if (!apiKey.startsWith('sk-')) {
+        print('  ❌ OpenAI API key should start with "sk-"');
+        return false;
+      }
+      return true;
+
+    case 'anthropic':
+      if (!apiKey.startsWith('sk-ant-')) {
+        print('  ❌ Anthropic API key should start with "sk-ant-"');
+        return false;
+      }
+      return true;
+
+    default:
+      return true;
+  }
+}
