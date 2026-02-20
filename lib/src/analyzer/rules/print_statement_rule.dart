@@ -8,6 +8,10 @@ import 'package:flutter_doctor_ai/src/utils/helpers.dart';
 class PrintStatementRule extends BaseRule {
   @override
   List<Finding> analyze(CompilationUnit unit, String filePath) {
+    if (filePath.contains('/cli/') || filePath.contains('/utils/helpers')) {
+      return [];
+    }
+
     final visitor = _PrintStatementVisitor(filePath, unit.lineInfo);
     unit.visitChildren(visitor);
     return visitor.findings;

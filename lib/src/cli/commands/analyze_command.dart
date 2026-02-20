@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:flutter_doctor_ai/flutter_doctor_ai.dart';
 import 'package:flutter_doctor_ai/src/ai/ai_factory.dart';
 import 'package:flutter_doctor_ai/src/analyzer/analysis_engine.dart';
 import 'package:flutter_doctor_ai/src/cli/ai_prompt.dart';
@@ -18,6 +20,13 @@ class AnalyzeCommand extends Command<int> {
       abbr: 'v',
       defaultsTo: false,
       help: 'Show detailed analysis output',
+    );
+
+    argParser.addFlag(
+      'json',
+      abbr: 'j',
+      defaultsTo: false,
+      help: 'Output results in JSON format',
     );
 
     argParser.addFlag(
@@ -52,8 +61,11 @@ class AnalyzeCommand extends Command<int> {
     String provider = argResults!['provider'] as String;
     String? apiKey = argResults!['api-key'] as String?;
     String? model = argResults!['model'] as String?;
+    bool jsonOutput = argResults!['json'] as bool;
 
-    print('🔍 Analyzing Flutter project...\n');
+    if (!jsonOutput) {
+      print('🔍 Analyzing Flutter project...\n');
+    }
 
     try {
       final projectInfo = await ProjectScanner().scan(projectPath);
@@ -97,237 +109,254 @@ class AnalyzeCommand extends Command<int> {
             ..sort((a, b) => b.linesOfCode.compareTo(a.linesOfCode));
       final largestFiles = sortedFiles.take(5);
 
-      // Print results
-      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      print('📦  PROJECT INFO');
-      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      print('  Name:     ${projectInfo.name}');
-      print('  Version:  v${projectInfo.version}');
-      print('  Path:     ${projectInfo.path}');
-      print('  Flutter:  ${projectInfo.isFlutterProject ? '✓ Yes' : '✗ No'}');
-      print('');
+      final scorer = HealthScorer(
+        totalFiles: projectInfo.totalFiles,
+        totalLines: projectInfo.totalLinesOfCode,
+        findings: findings,
+      );
+      final healthScore = scorer.calculate();
 
-      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      print('📊  CODE STATISTICS');
-      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      print('  Files:          ${projectInfo.totalFiles}');
-      print('  Lines of code:  ${formatNumber(projectInfo.totalLinesOfCode)}');
-      print('  Classes:        $totalClasses');
-      print('  Widgets:        $totalWidgets');
-      print('  Avg lines/file: $avgLinesPerFile');
-      print('');
-      print('  Widget Types:');
-      print('    • StatelessWidget: $statelessCount ($statelessPercent%)');
-      print('    • StatefulWidget:  $statefulCount ($statefulPercent%)');
-      print('');
-
-      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      print('📂  LARGEST FILES');
-      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      for (var file in largestFiles) {
-        final name = file.name.padRight(35);
-        print('  • $name ${formatNumber(file.linesOfCode)} lines');
-      }
-      print('');
-
-      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      print('⏱️  Scan completed in ${formatDuration(projectInfo.scanTime)}');
-      print('');
-
-      // Issues section
-      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      print('🔎  ISSUES FOUND');
-      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-      if (findings.isEmpty) {
-        print('  ✨ No issues found! Great job!');
-      } else {
-        print('  Found ${findings.length} issue(s)');
-        print('');
-
-        // Count by severity
-        int errors = findings.where((f) => f.severity == Severity.error).length;
-        int warnings = findings
-            .where((f) => f.severity == Severity.warning)
-            .length;
-        int infos = findings.where((f) => f.severity == Severity.info).length;
-
-        print('  Summary:');
-        print('    ❌ Errors:   $errors');
-        print('    ⚠️  Warnings: $warnings');
-        print('    ℹ️  Info:     $infos');
-        print('');
-
-        // Group findings by rule
-        Map<String, List<Finding>> findingsByRule = {};
-        for (var finding in findings) {
-          findingsByRule.putIfAbsent(finding.rule, () => []).add(finding);
-        }
-
-        final scorer = HealthScorer(
-          totalFiles: projectInfo.totalFiles,
-          totalLines: projectInfo.totalLinesOfCode,
+      if (jsonOutput) {
+        _printJsonOutput(
+          projectInfo: projectInfo,
           findings: findings,
+          totalClasses: totalClasses,
+          totalWidgets: totalWidgets,
+          statelessCount: statelessCount,
+          statefulCount: statefulCount,
+          healthScore: healthScore,
         );
-        final healthScore = scorer.calculate();
+      } else {
+        // Print results
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        print('📦  PROJECT INFO');
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        print('  Name:     ${projectInfo.name}');
+        print('  Version:  v${projectInfo.version}');
+        print('  Path:     ${projectInfo.path}');
+        print('  Flutter:  ${projectInfo.isFlutterProject ? '✓ Yes' : '✗ No'}');
+        print('');
 
         print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        print('💯  HEALTH SCORE');
+        print('📊  CODE STATISTICS');
         print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        print('');
+        print('  Files:          ${projectInfo.totalFiles}');
         print(
-          '       ${healthScore.emoji}  ${healthScore.score}/100 (Grade: ${healthScore.grade})',
+          '  Lines of code:  ${formatNumber(projectInfo.totalLinesOfCode)}',
         );
+        print('  Classes:        $totalClasses');
+        print('  Widgets:        $totalWidgets');
+        print('  Avg lines/file: $avgLinesPerFile');
         print('');
-        print('  ${healthScore.message}');
-        print(
-          '  Issues per 1K lines: ${healthScore.issuesPerKLOC.toStringAsFixed(1)}',
-        );
+        print('  Widget Types:');
+        print('    • StatelessWidget: $statelessCount ($statelessPercent%)');
+        print('    • StatefulWidget:  $statefulCount ($statefulPercent%)');
         print('');
 
-        print('  By Rule:');
-        for (var entry in findingsByRule.entries) {
-          final ruleName = entry.key.padRight(25);
-          final issueCount = entry.value.length;
-          final fileCount = entry.value.map((i) => i.filePath).toSet().length;
-
-          final issueText = issueCount == 1 ? 'issue' : 'issues';
-          final fileText = fileCount == 1 ? 'file' : 'files';
-
-          print(
-            '    • $ruleName $issueCount $issueText ($fileCount $fileText)',
-          );
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        print('📂  LARGEST FILES');
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        for (var file in largestFiles) {
+          final name = file.name.padRight(35);
+          print('  • $name ${formatNumber(file.linesOfCode)} lines');
         }
         print('');
-        // Top offenders (only for large_build_method)
-        final largeBuildFindings = findingsByRule['large_build_method'] ?? [];
-        if (largeBuildFindings.isNotEmpty) {
-          print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-          print('🚨  TOP OFFENDERS (Large Build Methods)');
-          print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-          final sortedLargeBuild = [...largeBuildFindings]
-            ..sort((a, b) {
-              final aLines = extractLineCount(a.message);
-              final bLines = extractLineCount(b.message);
-              return bLines.compareTo(aLines);
-            });
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        print('⏱️  Scan completed in ${formatDuration(projectInfo.scanTime)}');
+        print('');
 
-          final topOffenders = sortedLargeBuild.take(5);
-          for (var finding in topOffenders) {
-            final fileName = finding.filePath.split('/').last;
-            final lines = extractLineCount(finding.message);
-            print('  • $fileName — $lines lines');
-          }
-          print('');
-        }
+        // Issues section
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        print('🔎  ISSUES FOUND');
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-        // Verbose: show all issues grouped by rule
-        if (verbose) {
-          print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-          print('📋  ALL ISSUES');
-          print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-          for (var entry in findingsByRule.entries) {
-            print('');
-            print('  📌 ${entry.key} (${entry.value.length} issues)');
-            print('  ─────────────────────────────────');
-
-            for (var finding in entry.value) {
-              String icon = finding.severity == Severity.error
-                  ? '❌'
-                  : finding.severity == Severity.warning
-                  ? '⚠️'
-                  : 'ℹ️';
-
-              final fileName = finding.filePath.split('/').last;
-              print('  $icon $fileName:${finding.lineNumber}');
-              print('     ${finding.message}');
-              if (finding.suggestion != null) {
-                print('     💡 ${finding.suggestion}');
-              }
-            }
-          }
+        if (findings.isEmpty) {
+          print('  ✨ No issues found! Great job!');
         } else {
-          print('  💡 Run with --verbose to see all issues');
-        }
+          print('  Found ${findings.length} issue(s)');
+          print('');
 
-        // AI suggestions
+          // Count by severity
+          int errors = findings
+              .where((f) => f.severity == Severity.error)
+              .length;
+          int warnings = findings
+              .where((f) => f.severity == Severity.warning)
+              .length;
+          int infos = findings.where((f) => f.severity == Severity.info).length;
 
-        if (useAI) {
-          AIConfig? aiConfig;
+          print('  Summary:');
+          print('    ❌ Errors:   $errors');
+          print('    ⚠️  Warnings: $warnings');
+          print('    ℹ️  Info:     $infos');
+          print('');
 
-          // If API key provided via flag, use it directly
-          if (apiKey != null) {
-            aiConfig = AIConfig(
-              provider: provider,
-              model:
-                  argResults!['model'] as String? ?? getDefaultModel(provider),
-              apiKey: apiKey,
-            );
-          } else {
-            // Interactive mode
-            aiConfig = await AiPrompt.configure();
+          // Group findings by rule
+          Map<String, List<Finding>> findingsByRule = {};
+          for (var finding in findings) {
+            findingsByRule.putIfAbsent(finding.rule, () => []).add(finding);
           }
 
-          if (aiConfig == null) {
-            print('AI configuration cancelled.');
-            return 0;
-          }
-
-          print('');
           print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-          print('🤖  AI SUGGESTIONS');
+          print('💯  HEALTH SCORE');
           print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
           print('');
-          print('  Using ${aiConfig.provider} with ${aiConfig.model}');
+          print(
+            '       ${healthScore.emoji}  ${healthScore.score}/100 (Grade: ${healthScore.grade})',
+          );
+          print('');
+          print('  ${healthScore.message}');
+          print(
+            '  Issues per 1K lines: ${healthScore.issuesPerKLOC.toStringAsFixed(1)}',
+          );
           print('');
 
-          try {
-            final aiProvider = AIFactory.create(
-              aiConfig.provider,
-              aiConfig.apiKey,
+          print('  By Rule:');
+          for (var entry in findingsByRule.entries) {
+            final ruleName = entry.key.padRight(25);
+            final issueCount = entry.value.length;
+            final fileCount = entry.value.map((i) => i.filePath).toSet().length;
+
+            final issueText = issueCount == 1 ? 'issue' : 'issues';
+            final fileText = fileCount == 1 ? 'file' : 'files';
+
+            print(
+              '    • $ruleName $issueCount $issueText ($fileCount $fileText)',
             );
+          }
+          print('');
+          // Top offenders (only for large_build_method)
+          final largeBuildFindings = findingsByRule['large_build_method'] ?? [];
+          if (largeBuildFindings.isNotEmpty) {
+            print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            print('🚨  TOP OFFENDERS (Large Build Methods)');
+            print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-            final topIssues = findings.take(3).toList();
+            final sortedLargeBuild = [...largeBuildFindings]
+              ..sort((a, b) {
+                final aLines = extractLineCount(a.message);
+                final bLines = extractLineCount(b.message);
+                return bLines.compareTo(aLines);
+              });
 
-            for (var i = 0; i < topIssues.length; i++) {
-              final finding = topIssues[i];
+            final topOffenders = sortedLargeBuild.take(5);
+            for (var finding in topOffenders) {
               final fileName = finding.filePath.split('/').last;
+              final lines = extractLineCount(finding.message);
+              print('  • $fileName — $lines lines');
+            }
+            print('');
+          }
 
-              print(
-                '  [${i + 1}/${topIssues.length}] $fileName:${finding.lineNumber}',
-              );
-              print('  Issue: ${finding.message}');
+          // Verbose: show all issues grouped by rule
+          if (verbose) {
+            print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            print('📋  ALL ISSUES');
+            print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+            for (var entry in findingsByRule.entries) {
               print('');
-
-              final codeSnippet = _getCodeSnippet(
-                finding.filePath,
-                finding.lineNumber,
-              );
-
-              final suggestion = await aiProvider.getSuggestion(
-                issue: finding.message,
-                code: codeSnippet,
-                filePath: finding.filePath,
-                model: aiConfig.model,
-              );
-
-              print('  💡 AI Suggestion:');
-              for (var line in suggestion.split('\n')) {
-                print('     $line');
-              }
-              print('');
+              print('  📌 ${entry.key} (${entry.value.length} issues)');
               print('  ─────────────────────────────────');
-              print('');
+
+              for (var finding in entry.value) {
+                String icon = finding.severity == Severity.error
+                    ? '❌'
+                    : finding.severity == Severity.warning
+                    ? '⚠️'
+                    : 'ℹ️';
+
+                final fileName = finding.filePath.split('/').last;
+                print('  $icon $fileName:${finding.lineNumber}');
+                print('     ${finding.message}');
+                if (finding.suggestion != null) {
+                  print('     💡 ${finding.suggestion}');
+                }
+              }
+            }
+          } else {
+            print('  💡 Run with --verbose to see all issues');
+          }
+
+          // AI suggestions
+
+          if (useAI) {
+            AIConfig? aiConfig;
+
+            // If API key provided via flag, use it directly
+            if (apiKey != null) {
+              aiConfig = AIConfig(
+                provider: provider,
+                model:
+                    argResults!['model'] as String? ??
+                    getDefaultModel(provider),
+                apiKey: apiKey,
+              );
+            } else {
+              // Interactive mode
+              aiConfig = await AiPrompt.configure();
             }
 
-            if (findings.length > 3) {
-              print('  ℹ️  Showing suggestions for top 3 issues only.');
-              print('     Total issues: ${findings.length}');
+            if (aiConfig == null) {
+              print('AI configuration cancelled.');
+              return 0;
             }
-          } catch (e) {
-            stderr.writeln('  ❌ AI Error: $e');
+
+            print('');
+            print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            print('🤖  AI SUGGESTIONS');
+            print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            print('');
+            print('  Using ${aiConfig.provider} with ${aiConfig.model}');
+            print('');
+
+            try {
+              final aiProvider = AIFactory.create(
+                aiConfig.provider,
+                aiConfig.apiKey,
+              );
+
+              final topIssues = findings.take(3).toList();
+
+              for (var i = 0; i < topIssues.length; i++) {
+                final finding = topIssues[i];
+                final fileName = finding.filePath.split('/').last;
+
+                print(
+                  '  [${i + 1}/${topIssues.length}] $fileName:${finding.lineNumber}',
+                );
+                print('  Issue: ${finding.message}');
+                print('');
+
+                final codeSnippet = _getCodeSnippet(
+                  finding.filePath,
+                  finding.lineNumber,
+                );
+
+                final suggestion = await aiProvider.getSuggestion(
+                  issue: finding.message,
+                  code: codeSnippet,
+                  filePath: finding.filePath,
+                  model: aiConfig.model,
+                );
+
+                print('  💡 AI Suggestion:');
+                for (var line in suggestion.split('\n')) {
+                  print('     $line');
+                }
+                print('');
+                print('  ─────────────────────────────────');
+                print('');
+              }
+
+              if (findings.length > 3) {
+                print('  ℹ️  Showing suggestions for top 3 issues only.');
+                print('     Total issues: ${findings.length}');
+              }
+            } catch (e) {
+              stderr.writeln('  ❌ AI Error: $e');
+            }
           }
         }
       }
@@ -337,6 +366,62 @@ class AnalyzeCommand extends Command<int> {
       stderr.writeln('Error: $e');
       return 1;
     }
+  }
+
+  void _printJsonOutput({
+    required ProjectInfo projectInfo,
+    required List<Finding> findings,
+    required int totalClasses,
+    required int totalWidgets,
+    required int statelessCount,
+    required int statefulCount,
+    required HealthScore healthScore,
+  }) {
+    final output = {
+      'project': {
+        'name': projectInfo.name,
+        'version': projectInfo.version,
+        'path': projectInfo.path,
+        'isFlutterProject': projectInfo.isFlutterProject,
+      },
+      'statistics': {
+        'totalFiles': projectInfo.totalFiles,
+        'totalLinesOfCode': projectInfo.totalLinesOfCode,
+        'totalClasses': totalClasses,
+        'totalWidgets': totalWidgets,
+        'statelessWidgets': statelessCount,
+        'statefulWidgets': statefulCount,
+      },
+      'summary': {
+        'total': findings.length,
+        'errors': findings.where((f) => f.severity == Severity.error).length,
+        'warnings': findings
+            .where((f) => f.severity == Severity.warning)
+            .length,
+        'info': findings.where((f) => f.severity == Severity.info).length,
+      },
+      'healthScore': {
+        'score': healthScore.score,
+        'grade': healthScore.grade,
+        'issuesPerKLOC': double.parse(
+          healthScore.issuesPerKLOC.toStringAsFixed(2),
+        ),
+      },
+      'findings': findings
+          .map(
+            (f) => {
+              'rule': f.rule,
+              'message': f.message,
+              'filePath': f.filePath,
+              'lineNumber': f.lineNumber,
+              'severity': f.severity.toString().split('.').last,
+              if (f.suggestion != null) 'suggestion': f.suggestion!,
+            },
+          )
+          .toList(),
+    };
+
+    print(jsonEncode(output));
   }
 }
 
