@@ -117,14 +117,19 @@ class AiPrompt {
           'mixtral-8x7b-32768',
         ];
       case 'gemini':
-        return ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'];
+        return [
+          'gemini-2.5-flash',
+          'gemini-2.5-pro',
+          'gemini-2.0-flash',
+          'gemini-flash-latest',
+        ];
       case 'openai':
         return ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo'];
       case 'anthropic':
         return [
+          'claude-sonnet-4-20250514',
           'claude-3-5-sonnet-20241022',
           'claude-3-5-haiku-20241022',
-          'claude-3-opus-20240229',
         ];
       default:
         return [];
