@@ -75,7 +75,7 @@ class HealthScore {
   final int totalFindings;
   final double issuesPerKLOC;
 
-  HealthScore({
+  const HealthScore({
     required this.score,
     required this.grade,
     required this.errors,

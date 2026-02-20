@@ -99,7 +99,9 @@ class AiPrompt {
       }
 
       // Basic validation based on provider
-      if (!validateApiKey(provider, apiKey)) {
+      final error = validateApiKey(provider, apiKey);
+      if (error != null) {
+        print('  ❌ $error');
         continue;
       }
 

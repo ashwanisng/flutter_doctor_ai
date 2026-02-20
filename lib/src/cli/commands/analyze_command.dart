@@ -1,16 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:args/command_runner.dart';
 import 'package:flutter_doctor_ai/flutter_doctor_ai.dart';
-import 'package:flutter_doctor_ai/src/ai/ai_factory.dart';
-import 'package:flutter_doctor_ai/src/analyzer/analysis_engine.dart';
 import 'package:flutter_doctor_ai/src/cli/ai_prompt.dart';
-import 'package:flutter_doctor_ai/src/models/ai_config.dart';
-import 'package:flutter_doctor_ai/src/models/finding.dart';
-import 'package:flutter_doctor_ai/src/scoring/health_score.dart';
-import 'package:flutter_doctor_ai/src/scanner/ast_parser.dart';
-import 'package:flutter_doctor_ai/src/scanner/project_scanner.dart';
 import 'package:flutter_doctor_ai/src/utils/helpers.dart';
 
 class AnalyzeCommand extends Command<int> {
@@ -53,14 +45,12 @@ class AnalyzeCommand extends Command<int> {
 
   @override
   Future<int> run() async {
-    String projectPath = argResults!.rest.isEmpty
-        ? '.'
-        : argResults!.rest.first;
+    String projectPath =
+        argResults!.rest.isEmpty ? '.' : argResults!.rest.first;
     bool verbose = argResults!['verbose'] as bool;
     bool useAI = argResults!['ai'] as bool;
     String provider = argResults!['provider'] as String;
     String? apiKey = argResults!['api-key'] as String?;
-    String? model = argResults!['model'] as String?;
     bool jsonOutput = argResults!['json'] as bool;
 
     if (!jsonOutput) {
@@ -104,9 +94,10 @@ class AnalyzeCommand extends Command<int> {
           ? (statefulCount / totalWidgets * 100).toStringAsFixed(1)
           : '0';
 
-      final sortedFiles =
-          projectInfo.files.where((f) => f.linesOfCode > 0).toList()
-            ..sort((a, b) => b.linesOfCode.compareTo(a.linesOfCode));
+      final sortedFiles = projectInfo.files
+          .where((f) => f.linesOfCode > 0)
+          .toList()
+        ..sort((a, b) => b.linesOfCode.compareTo(a.linesOfCode));
       final largestFiles = sortedFiles.take(5);
 
       final scorer = HealthScorer(
@@ -178,12 +169,10 @@ class AnalyzeCommand extends Command<int> {
           print('');
 
           // Count by severity
-          int errors = findings
-              .where((f) => f.severity == Severity.error)
-              .length;
-          int warnings = findings
-              .where((f) => f.severity == Severity.warning)
-              .length;
+          int errors =
+              findings.where((f) => f.severity == Severity.error).length;
+          int warnings =
+              findings.where((f) => f.severity == Severity.warning).length;
           int infos = findings.where((f) => f.severity == Severity.info).length;
 
           print('  Summary:');
@@ -233,8 +222,7 @@ class AnalyzeCommand extends Command<int> {
             print('🚨  TOP OFFENDERS (Large Build Methods)');
             print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-            final sortedLargeBuild = [...largeBuildFindings]
-              ..sort((a, b) {
+            final sortedLargeBuild = [...largeBuildFindings]..sort((a, b) {
                 final aLines = extractLineCount(a.message);
                 final bLines = extractLineCount(b.message);
                 return bLines.compareTo(aLines);
@@ -264,8 +252,8 @@ class AnalyzeCommand extends Command<int> {
                 String icon = finding.severity == Severity.error
                     ? '❌'
                     : finding.severity == Severity.warning
-                    ? '⚠️'
-                    : 'ℹ️';
+                        ? '⚠️'
+                        : 'ℹ️';
 
                 final fileName = finding.filePath.split('/').last;
                 print('  $icon $fileName:${finding.lineNumber}');
@@ -288,8 +276,7 @@ class AnalyzeCommand extends Command<int> {
             if (apiKey != null) {
               aiConfig = AIConfig(
                 provider: provider,
-                model:
-                    argResults!['model'] as String? ??
+                model: argResults!['model'] as String? ??
                     getDefaultModel(provider),
                 apiKey: apiKey,
               );
@@ -368,6 +355,30 @@ class AnalyzeCommand extends Command<int> {
     }
   }
 
+  String _getCodeSnippet(String filePath, int lineNumber) {
+    try {
+      final file = File(filePath);
+      if (!file.existsSync()) {
+        return '// Could not read file';
+      }
+
+      final lines = file.readAsLinesSync();
+
+      final start = (lineNumber - 6).clamp(0, lines.length);
+      final end = (lineNumber + 5).clamp(0, lines.length);
+
+      final snippet = <String>[];
+      for (var i = start; i < end; i++) {
+        final marker = (i + 1 == lineNumber) ? '>>> ' : '    ';
+        snippet.add('$marker${i + 1}: ${lines[i]}');
+      }
+
+      return snippet.join('\n');
+    } catch (e) {
+      return '// Error reading file: $e';
+    }
+  }
+
   void _printJsonOutput({
     required ProjectInfo projectInfo,
     required List<Finding> findings,
@@ -395,9 +406,8 @@ class AnalyzeCommand extends Command<int> {
       'summary': {
         'total': findings.length,
         'errors': findings.where((f) => f.severity == Severity.error).length,
-        'warnings': findings
-            .where((f) => f.severity == Severity.warning)
-            .length,
+        'warnings':
+            findings.where((f) => f.severity == Severity.warning).length,
         'info': findings.where((f) => f.severity == Severity.info).length,
       },
       'healthScore': {
@@ -422,29 +432,5 @@ class AnalyzeCommand extends Command<int> {
     };
 
     print(jsonEncode(output));
-  }
-}
-
-String _getCodeSnippet(String filePath, int lineNumber) {
-  try {
-    final file = File(filePath);
-    if (!file.existsSync()) {
-      return '// Could not read file';
-    }
-
-    final lines = file.readAsLinesSync();
-
-    final start = (lineNumber - 6).clamp(0, lines.length);
-    final end = (lineNumber + 5).clamp(0, lines.length);
-
-    final snippet = <String>[];
-    for (var i = start; i < end; i++) {
-      final marker = (i + 1 == lineNumber) ? '>>> ' : '    ';
-      snippet.add('$marker${i + 1}: ${lines[i]}');
-    }
-
-    return snippet.join('\n');
-  } catch (e) {
-    return '// Error reading file: $e';
   }
 }

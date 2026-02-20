@@ -26,62 +26,60 @@ String formatDuration(Duration duration) {
   return '${(duration.inMilliseconds / 1000).toStringAsFixed(2)}s';
 }
 
+/// Extract line count from message like "Build method is 648 lines long..."
 int extractLineCount(String message) {
-  // Extract number from "Build method is 648 lines long..."
   final match = RegExp(r'is (\d+) lines').firstMatch(message);
   return match != null ? int.parse(match.group(1)!) : 0;
 }
 
+/// Get default model for a provider
 String getDefaultModel(String provider) {
   switch (provider) {
     case 'groq':
       return 'llama-3.3-70b-versatile';
     case 'gemini':
-      return 'gemini-1.5-flash';
+      return 'gemini-2.5-flash';
     case 'openai':
       return 'gpt-4o-mini';
     case 'anthropic':
-      return 'claude-3-5-sonnet-20241022';
+      return 'claude-sonnet-4-20250514';
     default:
       return '';
   }
 }
 
-bool validateApiKey(String provider, String apiKey) {
+/// Validate API key format for a provider.
+/// Returns null if valid, or an error message if invalid.
+String? validateApiKey(String provider, String apiKey) {
   switch (provider) {
     case 'groq':
       if (!apiKey.startsWith('gsk_')) {
-        print('  ❌ Groq API key should start with "gsk_"');
-        return false;
+        return 'Groq API key should start with "gsk_"';
       }
       if (apiKey.length < 20) {
-        print('  ❌ API key seems too short. Please check and try again.');
-        return false;
+        return 'API key seems too short. Please check and try again.';
       }
-      return true;
+      return null;
 
     case 'gemini':
       if (apiKey.length < 20) {
-        print('  ❌ API key seems too short. Please check and try again.');
-        return false;
+        return 'API key seems too short. Please check and try again.';
       }
-      return true;
+      return null;
 
     case 'openai':
       if (!apiKey.startsWith('sk-')) {
-        print('  ❌ OpenAI API key should start with "sk-"');
-        return false;
+        return 'OpenAI API key should start with "sk-"';
       }
-      return true;
+      return null;
 
     case 'anthropic':
       if (!apiKey.startsWith('sk-ant-')) {
-        print('  ❌ Anthropic API key should start with "sk-ant-"');
-        return false;
+        return 'Anthropic API key should start with "sk-ant-"';
       }
-      return true;
+      return null;
 
     default:
-      return true;
+      return null;
   }
 }

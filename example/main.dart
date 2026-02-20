@@ -9,8 +9,10 @@ void main(List<String> args) async {
   // Scan the project for Dart files and metadata
   final scanner = ProjectScanner();
   final projectInfo = await scanner.scan(projectPath);
-  print('Project: \\${projectInfo.name} (v\\${projectInfo.version})');
-  print('Dart files: \\${projectInfo.totalFiles}, Total lines: \\${projectInfo.totalLinesOfCode}');
+  print('Project: ${projectInfo.name} (v${projectInfo.version})');
+  print(
+    'Dart files: ${projectInfo.totalFiles}, Total lines: ${projectInfo.totalLinesOfCode}',
+  );
 
   // Run static analysis rules
   final engine = AnalysisEngine();
@@ -19,11 +21,11 @@ void main(List<String> args) async {
     print('No issues found!');
   } else {
     for (final finding in findings) {
-      print('[\\${finding.severity.name.toUpperCase()}] Rule: \\${finding.rule}');
-      print('  File: \\${finding.filePath} (Line: \\${finding.lineNumber})');
-      print('  Message: \\${finding.message}');
+      print('[${finding.severity.name.toUpperCase()}] Rule: ${finding.rule}');
+      print('  File: ${finding.filePath} (Line: ${finding.lineNumber})');
+      print('  Message: ${finding.message}');
       if (finding.suggestion != null) {
-        print('  Suggestion: \\${finding.suggestion}');
+        print('  Suggestion: ${finding.suggestion}');
       }
       print('');
     }

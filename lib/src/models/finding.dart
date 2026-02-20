@@ -8,7 +8,7 @@ class Finding {
   final Severity severity;
   final String? suggestion;
 
-  Finding({
+  const Finding({
     required this.rule,
     required this.message,
     required this.filePath,

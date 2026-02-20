@@ -23,7 +23,7 @@ class AstParser {
 
 class _ClassVisitor extends RecursiveAstVisitor<void> {
   _ClassVisitor({LineInfo? lineInfo})
-    : lineInfo = lineInfo ?? LineInfo(const []);
+      : lineInfo = lineInfo ?? LineInfo(const []);
 
   final LineInfo lineInfo;
   final List<ClassInfo> classes = [];
@@ -31,17 +31,24 @@ class _ClassVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {
-    String className = node.name.lexeme;
-    String? superclass = node.extendsClause?.superclass.name.lexeme;
+    String className = node.namePart.typeName.lexeme;
 
-    List<String> methods = node.members
+    String? superclass = node.extendsClause?.superclass.toSource();
+
+    String? superclassName = node.extendsClause?.superclass.name.lexeme;
+
+    final nodeBody = node.body;
+    final bodyMembers =
+        nodeBody is BlockClassBody ? nodeBody.members : <ClassMember>[];
+
+    List<String> methods = bodyMembers
         .whereType<MethodDeclaration>()
         .map((e) => e.name.lexeme)
         .toList();
 
     int lineNumber = lineInfo.getLocation(node.offset).lineNumber;
 
-    bool hasConstructor = node.members.any(
+    bool hasConstructor = bodyMembers.any(
       (member) =>
           member is ConstructorDeclaration && member.constKeyword != null,
     );
@@ -55,11 +62,12 @@ class _ClassVisitor extends RecursiveAstVisitor<void> {
       ),
     );
 
-    if (superclass == 'StatelessWidget' || superclass == 'StatefulWidget') {
+    if (superclassName == 'StatelessWidget' ||
+        superclassName == 'StatefulWidget') {
       widgets.add(
         WidgetInfo(
           name: className,
-          type: superclass!,
+          type: superclassName!,
           lineNumber: lineNumber,
           hasConstConstructor: hasConstructor,
         ),

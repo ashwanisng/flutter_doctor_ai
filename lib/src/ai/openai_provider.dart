@@ -13,14 +13,14 @@ class OpenAIProvider extends AIProvider {
   ];
 
   OpenAIProvider(this.apiKey)
-    : _dio = Dio(
-        BaseOptions(
-          baseUrl: 'https://api.openai.com/v1',
-          headers: {'Content-Type': 'application/json'},
-          connectTimeout: const Duration(seconds: 30),
-          receiveTimeout: const Duration(seconds: 60),
-        ),
-      );
+      : _dio = Dio(
+          BaseOptions(
+            baseUrl: 'https://api.openai.com/v1',
+            headers: {'Content-Type': 'application/json'},
+            connectTimeout: const Duration(seconds: 30),
+            receiveTimeout: const Duration(seconds: 60),
+          ),
+        );
 
   @override
   String get name => 'OpenAI';
@@ -30,11 +30,11 @@ class OpenAIProvider extends AIProvider {
 
   @override
   List<String> get availableModels => [
-    'gpt-4o-mini',
-    'gpt-4o',
-    'gpt-4-turbo',
-    'gpt-3.5-turbo',
-  ];
+        'gpt-4o-mini',
+        'gpt-4o',
+        'gpt-4-turbo',
+        'gpt-3.5-turbo',
+      ];
 
   @override
   Future<String> getSuggestion({

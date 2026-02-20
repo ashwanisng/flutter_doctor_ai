@@ -3,7 +3,6 @@ abstract class AIProvider {
   List<String> get availableModels;
   String get defaultModel;
 
-
   Future<String> getSuggestion({
     required String issue,
     required String code,

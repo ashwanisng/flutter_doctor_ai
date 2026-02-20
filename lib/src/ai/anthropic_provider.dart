@@ -13,14 +13,14 @@ class AnthropicProvider extends AIProvider {
   ];
 
   AnthropicProvider(this.apiKey)
-    : _dio = Dio(
-        BaseOptions(
-          baseUrl: 'https://api.anthropic.com/v1',
-          headers: {'Content-Type': 'application/json'},
-          connectTimeout: const Duration(seconds: 30),
-          receiveTimeout: const Duration(seconds: 60),
-        ),
-      );
+      : _dio = Dio(
+          BaseOptions(
+            baseUrl: 'https://api.anthropic.com/v1',
+            headers: {'Content-Type': 'application/json'},
+            connectTimeout: const Duration(seconds: 30),
+            receiveTimeout: const Duration(seconds: 60),
+          ),
+        );
 
   @override
   String get name => 'Anthropic';
@@ -30,10 +30,10 @@ class AnthropicProvider extends AIProvider {
 
   @override
   List<String> get availableModels => [
-    'claude-sonnet-4-20250514',
-    'claude-3-5-sonnet-20241022',
-    'claude-3-5-haiku-20241022',
-  ];
+        'claude-sonnet-4-20250514',
+        'claude-3-5-sonnet-20241022',
+        'claude-3-5-haiku-20241022',
+      ];
 
   @override
   Future<String> getSuggestion({

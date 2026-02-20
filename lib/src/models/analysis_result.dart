@@ -3,7 +3,7 @@ class FileAnalysis {
   final List<ClassInfo> classes;
   final List<WidgetInfo> widgets;
 
-  FileAnalysis({
+  const FileAnalysis({
     required this.filePath,
     required this.classes,
     required this.widgets,
@@ -16,7 +16,7 @@ class ClassInfo {
   final List<String> methods;
   final int lineNumber;
 
-  ClassInfo({
+  const ClassInfo({
     required this.name,
     required this.methods,
     this.superClass,
@@ -34,7 +34,7 @@ class WidgetInfo {
   final bool hasConstConstructor;
   final int lineNumber;
 
-  WidgetInfo({
+  const WidgetInfo({
     required this.name,
     required this.type,
     required this.hasConstConstructor,

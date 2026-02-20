@@ -16,7 +16,9 @@ class AIFactory {
         return AnthropicProvider(apiKey);
 
       default:
-        throw Exception('Unknown provider: $provider. Supported: groq');
+        throw Exception(
+          'Unknown provider: $provider. Supported: groq, gemini, openai, anthropic',
+        );
     }
   }
 }

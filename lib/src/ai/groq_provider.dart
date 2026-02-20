@@ -16,14 +16,14 @@ class GroqProvider implements AIProvider {
   ];
 
   GroqProvider(this.apiKey)
-    : _dio = Dio(
-        BaseOptions(
-          baseUrl: 'https://api.groq.com/openai/v1',
-          headers: {'Content-Type': 'application/json'},
-          connectTimeout: const Duration(seconds: 30),
-          receiveTimeout: const Duration(seconds: 60),
-        ),
-      );
+      : _dio = Dio(
+          BaseOptions(
+            baseUrl: 'https://api.groq.com/openai/v1',
+            headers: {'Content-Type': 'application/json'},
+            connectTimeout: const Duration(seconds: 30),
+            receiveTimeout: const Duration(seconds: 60),
+          ),
+        );
 
   @override
   String get name => 'Groq';
@@ -33,11 +33,11 @@ class GroqProvider implements AIProvider {
 
   @override
   List<String> get availableModels => [
-    'llama-3.3-70b-versatile',
-    'llama-3.1-70b-versatile',
-    'llama-3.1-8b-instant',
-    'mixtral-8x7b-32768',
-  ];
+        'llama-3.3-70b-versatile',
+        'llama-3.1-70b-versatile',
+        'llama-3.1-8b-instant',
+        'mixtral-8x7b-32768',
+      ];
 
   @override
   Future<String> getSuggestion({

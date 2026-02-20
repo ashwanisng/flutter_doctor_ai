@@ -1,8 +1,7 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/source/line_info.dart';
-import 'package:flutter_doctor_ai/src/analyzer/rules/base_rule.dart';
-import 'package:flutter_doctor_ai/src/models/finding.dart';
+import 'package:flutter_doctor_ai/flutter_doctor_ai.dart';
 import 'package:flutter_doctor_ai/src/utils/helpers.dart';
 
 class MissingDisposeRule extends BaseRule {
@@ -33,15 +32,16 @@ class _MissingDisposeVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {
-    final className = node.name.lexeme;
-    final classNameOffset = node.name.offset;
-    final superclass = node.extendsClause?.superclass.name.lexeme;
-    final members = node.members;
+    final className = node.namePart.typeName.lexeme;
+    final classNameOffset = node.namePart.typeName.offset;
 
-    // Check for State subclasses
-    if (superclass == 'State' ||
-        (superclass != null && superclass.startsWith('State<'))) {
-      // Collect disposable fields
+    String? superclassName = node.extendsClause?.superclass.name.lexeme;
+
+    final nodeBody = node.body;
+    final members =
+        nodeBody is BlockClassBody ? nodeBody.members : <ClassMember>[];
+
+    if (superclassName == 'State') {
       List<String> disposableFields = [];
       for (var member in members) {
         if (member is FieldDeclaration) {
@@ -73,7 +73,6 @@ class _MissingDisposeVisitor extends RecursiveAstVisitor<void> {
         }
 
         if (disposeMethod == null) {
-          // No dispose method: emit finding for each disposable field
           for (var field in disposableFields) {
             findings.add(
               Finding(
@@ -100,7 +99,6 @@ class _MissingDisposeVisitor extends RecursiveAstVisitor<void> {
             ),
           );
         } else {
-          // Dispose method exists: check its body
           Set<String> disposedFields = {};
           bool superDisposeCalled = false;
 
@@ -114,7 +112,6 @@ class _MissingDisposeVisitor extends RecursiveAstVisitor<void> {
                   var target = expr.target;
                   var methodName = expr.methodName.name;
 
-                  // Check for field.dispose() or field.close()
                   if (target is SimpleIdentifier) {
                     if ((methodName == 'dispose' || methodName == 'close') &&
                         disposableFields.contains(target.name)) {
@@ -122,7 +119,6 @@ class _MissingDisposeVisitor extends RecursiveAstVisitor<void> {
                     }
                   }
 
-                  // Check for super.dispose()
                   if (target is SuperExpression && methodName == 'dispose') {
                     superDisposeCalled = true;
                   }
@@ -131,7 +127,6 @@ class _MissingDisposeVisitor extends RecursiveAstVisitor<void> {
             }
           }
 
-          // Emit findings for fields not disposed
           for (var field in disposableFields) {
             if (!disposedFields.contains(field)) {
               findings.add(
@@ -149,7 +144,6 @@ class _MissingDisposeVisitor extends RecursiveAstVisitor<void> {
             }
           }
 
-          // Emit finding if super.dispose() is not called
           if (!superDisposeCalled) {
             final disposeNameOffset = disposeMethod.name.offset;
             findings.add(

@@ -6,7 +6,7 @@ class ProjectInfo {
   final bool isFlutterProject;
   final Duration scanTime;
 
-  ProjectInfo({
+  const ProjectInfo({
     required this.path,
     required this.name,
     required this.version,
@@ -26,7 +26,7 @@ class DartFile {
   final String content;
   final int linesOfCode;
 
-  DartFile({
+  const DartFile({
     required this.path,
     required this.name,
     required this.content,
