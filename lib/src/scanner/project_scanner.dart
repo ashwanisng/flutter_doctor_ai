@@ -4,7 +4,21 @@ import 'package:flutter_doctor_ai/src/models/project_info.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
+/// Scans a directory for Dart files and extracts project metadata.
+///
+/// Example:
+/// ```dart
+/// final scanner = ProjectScanner();
+/// final projectInfo = await scanner.scan('/path/to/project');
+/// print('Found ${projectInfo.totalFiles} files');
+/// ```
 class ProjectScanner {
+
+  /// Scan a project directory and return project information.
+  ///
+  /// [projectPath] - Path to the project root (containing pubspec.yaml)
+  ///
+  /// Throws if pubspec.yaml is not found.
   Future<ProjectInfo> scan(String projectPath) async {
     final stopwatch = Stopwatch()..start();
 

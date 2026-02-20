@@ -8,11 +8,20 @@ import 'package:flutter_doctor_ai/src/analyzer/rules/print_statement_rule.dart';
 import 'package:flutter_doctor_ai/src/models/finding.dart';
 import 'package:flutter_doctor_ai/src/models/project_info.dart';
 
+/// Main analysis engine that runs all rules against a project.
+///
+/// Example:
+/// ```dart
+/// final engine = AnalysisEngine();
+/// final findings = engine.analyzeProject(projectInfo.files);
+/// ```
 class AnalysisEngine {
+  /// List of analysis rules to run
   final List<BaseRule> rules;
 
   AnalysisEngine({List<BaseRule>? rules}) : rules = rules ?? _defaultRules();
 
+  /// Creates an engine with all built-in rules.
   static List<BaseRule> _defaultRules() {
     return [
       LargeBuildRule(),

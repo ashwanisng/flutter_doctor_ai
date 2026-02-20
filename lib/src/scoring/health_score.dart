@@ -1,17 +1,27 @@
 import 'package:flutter_doctor_ai/src/models/finding.dart';
 import 'package:flutter_doctor_ai/src/utils/helpers.dart';
 
+/// Calculates and holds the health score for a project.
+///
+/// The score is calculated based on the number and severity
+/// of issues found, normalized by project size.
 class HealthScorer {
+  /// Total number of files in the project
   final int totalFiles;
+
+  /// Total lines of code in the project
   final int totalLines;
+
+  /// List of all findings from analysis
   final List<Finding> findings;
 
-  HealthScorer({
+  const HealthScorer({
     required this.totalFiles,
     required this.totalLines,
     required this.findings,
   });
 
+  /// Calculate the health score based on findings and project size.
   HealthScore calculate() {
     int errors = 0;
     int warnings = 0;
@@ -66,13 +76,30 @@ class HealthScorer {
   }
 }
 
+/// Represents the calculated health score for a project.
+///
+/// Includes the numeric score (0-100), letter grade,
+/// and breakdown of issues by severity.
 class HealthScore {
+  /// Numeric score from 0 to 100
   final int score;
+
+  /// Letter grade (A, B, C, D, F)
   final String grade;
+
+  /// Number of error-level findings
   final int errors;
+
+  /// Number of warning-level findings
   final int warnings;
+
+  /// Number of info-level findings
   final int infos;
+
+  /// Total number of findings
   final int totalFindings;
+
+  /// Issues per 1000 lines of code (KLOC)
   final double issuesPerKLOC;
 
   const HealthScore({
@@ -85,6 +112,7 @@ class HealthScore {
     required this.issuesPerKLOC,
   });
 
+  /// Emoji representing the health score
   String get emoji {
     if (score >= 90) return '🌟';
     if (score >= 80) return '✅';
@@ -93,11 +121,12 @@ class HealthScore {
     return '❌';
   }
 
+  /// Human-readable message about the score
   String get message {
     if (score >= 90) return 'Excellent! Your code is in great shape.';
-    if (score >= 80) return 'Good job! Minor improvements needed.';
-    if (score >= 70) return 'Fair. Some issues should be addressed.';
-    if (score >= 60) return 'Needs work. Several issues found.';
+    if (score >= 80) return 'Good job! Minor improvements possible.';
+    if (score >= 70) return 'Fair. Consider addressing some issues.';
+    if (score >= 60) return 'Needs attention. Several issues found.';
     return 'Critical! Major issues require attention.';
   }
 }
