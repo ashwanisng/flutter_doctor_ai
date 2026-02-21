@@ -2,6 +2,7 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/source/line_info.dart';
 import 'package:flutter_doctor_ai/flutter_doctor_ai.dart';
+import 'package:flutter_doctor_ai/src/utils/helpers.dart';
 
 class MissingMountedCheckRule extends BaseRule {
   @override

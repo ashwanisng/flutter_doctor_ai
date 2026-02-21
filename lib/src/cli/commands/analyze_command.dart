@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:flutter_doctor_ai/flutter_doctor_ai.dart';
 import 'package:flutter_doctor_ai/src/cli/ai_prompt.dart';
+import 'package:flutter_doctor_ai/src/utils/helpers.dart';
 import 'package:path/path.dart' as p;
 
 class AnalyzeCommand extends Command<int> {
@@ -405,6 +406,7 @@ class AnalyzeCommand extends Command<int> {
         'version': projectInfo.version,
         'path': projectInfo.path,
         'isFlutterProject': projectInfo.isFlutterProject,
+        'scanTimeMs': formatDuration(projectInfo.scanTime),
       },
       'statistics': {
         'totalFiles': projectInfo.totalFiles,

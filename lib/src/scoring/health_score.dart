@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_doctor_ai/src/models/finding.dart';
 import 'package:flutter_doctor_ai/src/utils/helpers.dart';
 
@@ -6,7 +8,6 @@ import 'package:flutter_doctor_ai/src/utils/helpers.dart';
 /// The score is calculated based on the number and severity
 /// of issues found, normalized by project size.
 class HealthScorer {
-
   /// Total lines of code in the project
   final int totalLines;
 
@@ -43,7 +44,7 @@ class HealthScorer {
     double weightedIssues = (errors * 3) + (warnings * 1) + (infos * 0.25);
 
     // Issues per 1000 lines of code (KLOC)
-    double kloc = totalLines / 1000;
+    double kloc = math.max(totalLines / 1000, 1.0);
     double issuesPerKLOC = kloc > 0 ? weightedIssues / kloc : weightedIssues;
 
     // Score: 100 for 0 issues/KLOC, decreases as issues increase
