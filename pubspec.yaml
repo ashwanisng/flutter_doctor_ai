@@ -5,6 +5,7 @@ version: 0.1.0
 homepage: https://github.com/ashwanisng/flutter_doctor_ai
 repository: https://github.com/ashwanisng/flutter_doctor_ai
 issue_tracker: https://github.com/ashwanisng/flutter_doctor_ai/issues
+documentation: https://github.com/ashwanisng/flutter_doctor_ai#readme
 
 topics:
   - flutter

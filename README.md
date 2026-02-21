@@ -8,8 +8,25 @@ AI-powered static analysis CLI and library for Flutter/Dart projects. Detect com
 
 ---
 
+## Why flutter_doctor_ai?
+
+Flutter's built-in analyzer catches type errors and lint warnings, but it doesn't understand Flutter-specific patterns. `flutter_doctor_ai` fills that gap:
+
+| Problem | flutter_doctor_ai rule |
+|---|---|
+| `build()` method growing to hundreds of lines | `large_build_method` |
+| `AnimationController` leaking after widget unmounts | `missing_dispose` |
+| Debug `print()` shipping to production | `print_statement` |
+| `setState()` crashing on unmounted widgets | `missing_mounted_check` |
+| `setState(() {})` causing silent unnecessary rebuilds | `empty_setstate` |
+
+Beyond static rules, it gives you a single **health score** so you can track code quality over time and gate CI/CD pipelines — and when you need more than a rule description, it calls your AI provider of choice for a concrete, context-aware fix.
+
+---
+
 ## Table of Contents
 
+- [Why flutter\_doctor\_ai?](#why-flutter_doctor_ai)
 - [Features](#features)
 - [Installation](#installation)
   - [Global CLI](#global-cli)
@@ -33,6 +50,7 @@ AI-powered static analysis CLI and library for Flutter/Dart projects. Detect com
 - [Custom Rules](#custom-rules)
 - [JSON Output Schema](#json-output-schema)
 - [Health Score](#health-score)
+- [Example](#example)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -559,6 +577,22 @@ score          = clamp(100 − issuesPerKLOC × 2.5, 0, 100)
 | 0–59 | F | Critical — major issues require attention |
 
 Errors are weighted **3×** and info findings **0.25×** to reflect their relative impact on maintainability. The score is normalised by KLOC so it stays comparable across projects of different sizes.
+
+---
+
+## Example
+
+A complete working example is available in the [`example/`](example/) directory. It demonstrates:
+
+- Scanning a project with `ProjectScanner`
+- Running all built-in rules with `AnalysisEngine`
+- Printing findings grouped by severity
+- Reading the `ProjectAnalysisResult` statistics
+
+```bash
+# Run the example against any Flutter project
+dart example/main.dart /path/to/your/flutter/project
+```
 
 ---
 

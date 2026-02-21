@@ -70,6 +70,9 @@ export 'src/models/analysis_result.dart';
 export 'src/models/finding.dart';
 export 'src/models/project_info.dart';
 
+// Severity enum — needed to compare finding.severity values
+export 'src/utils/helpers.dart' show Severity;
+
 // Scanner
 export 'src/scanner/ast_parser.dart';
 export 'src/scanner/project_scanner.dart';
