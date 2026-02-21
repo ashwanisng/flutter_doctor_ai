@@ -95,3 +95,4 @@ export 'src/ai/openai_provider.dart';
 export 'src/ai/anthropic_provider.dart';
 export 'src/ai/prompt_builder.dart';
 export 'src/models/ai_config.dart';
+export 'src/utils/helpers.dart';

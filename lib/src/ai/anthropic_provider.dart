@@ -76,34 +76,44 @@ class AnthropicProvider extends AIProvider {
         return response.data['content'][0]['text'];
       } on DioException catch (e) {
         final statusCode = e.response?.statusCode;
-        final errorBody = e.response?.data?.toString() ?? '';
+        final responseData = e.response?.data;
 
-        // Model not found - try next
-        if (statusCode == 400 ||
-            statusCode == 404 ||
-            errorBody.contains('not_found') ||
-            errorBody.contains('invalid_model')) {
+        // Extract Anthropic-specific error details if available
+        String? errorType;
+        String? errorMessage;
+        if (responseData is Map) {
+          errorType = responseData['error']?['type'];
+          errorMessage = responseData['error']?['message'];
+        }
+
+        if (statusCode == 404 ||
+            errorType == 'not_found_error' ||
+            (errorMessage?.contains('model') ?? false)) {
           lastError = Exception('Model $currentModel is unavailable');
           continue;
         }
 
-        // Auth error - don't retry
+        if (statusCode == 400) {
+          throw Exception(
+              'Invalid request for $currentModel: ${errorMessage ?? "Malformed request"}');
+        }
+
+        // 3. Auth error: Do NOT retry
         if (statusCode == 401) {
           throw Exception(
-            'Invalid API key. Get one at https://console.anthropic.com',
-          );
+              'Invalid API key. Get one at https://console.anthropic.com');
         }
 
-        // Rate limit - don't retry
+        // 4. Rate limit: Do NOT retry (retrying immediately will just fail again)
         if (statusCode == 429) {
-          throw Exception('Rate limit exceeded. Wait and try again.');
+          throw Exception(
+              'Rate limit exceeded for $currentModel. Wait and try again.');
         }
 
-        // Other errors - don't retry
+        // 5. Generic API/Network errors
         if (e.response != null) {
           throw Exception(
-            'API error: ${e.response?.statusCode} - ${e.response?.data}',
-          );
+              'API error: $statusCode - ${responseData ?? e.message}');
         }
         throw Exception('Network error: ${e.message}');
       }

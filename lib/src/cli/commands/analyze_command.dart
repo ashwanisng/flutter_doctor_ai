@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:flutter_doctor_ai/flutter_doctor_ai.dart';
 import 'package:flutter_doctor_ai/src/cli/ai_prompt.dart';
-import 'package:flutter_doctor_ai/src/utils/helpers.dart';
 import 'package:path/path.dart' as p;
 
 class AnalyzeCommand extends Command<int> {
@@ -90,7 +89,6 @@ class AnalyzeCommand extends Command<int> {
       final largestFiles = sortedFiles.take(5);
 
       final scorer = HealthScorer(
-        totalFiles: projectInfo.totalFiles,
         totalLines: projectInfo.totalLinesOfCode,
         findings: findings,
       );

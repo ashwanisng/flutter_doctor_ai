@@ -2,7 +2,6 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/source/line_info.dart';
 import 'package:flutter_doctor_ai/flutter_doctor_ai.dart';
-import 'package:flutter_doctor_ai/src/utils/helpers.dart';
 
 class MissingDisposeRule extends BaseRule {
   @override
@@ -46,7 +45,17 @@ class _MissingDisposeVisitor extends RecursiveAstVisitor<void> {
       for (var member in members) {
         if (member is FieldDeclaration) {
           for (var variable in member.fields.variables) {
+            // Prefer the explicit type annotation. Fall back to the
+            // constructor name in the initializer for inferred-type fields
+            // (var/final/late final _ctrl = TextEditingController()).
             String fieldType = member.fields.type?.toString() ?? '';
+            if (fieldType.isEmpty) {
+              final initializer = variable.initializer;
+              if (initializer is InstanceCreationExpression) {
+                fieldType = initializer.constructorName.type.name.lexeme;
+              }
+            }
+
             final lowerFieldType = fieldType.toLowerCase();
             if (lowerFieldType.contains('controller') ||
                 lowerFieldType.contains('stream') ||
@@ -113,7 +122,12 @@ class _MissingDisposeVisitor extends RecursiveAstVisitor<void> {
                   var methodName = expr.methodName.name;
 
                   if (target is SimpleIdentifier) {
-                    if ((methodName == 'dispose' || methodName == 'close') &&
+                    // 'cancel' covers StreamSubscription.cancel(),
+                    // 'close'   covers StreamController.close(),
+                    // 'dispose' covers all other controllers.
+                    if ((methodName == 'dispose' ||
+                            methodName == 'close' ||
+                            methodName == 'cancel') &&
                         disposableFields.contains(target.name)) {
                       disposedFields.add(target.name);
                     }

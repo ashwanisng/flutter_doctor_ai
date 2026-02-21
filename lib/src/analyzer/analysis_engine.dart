@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:flutter_doctor_ai/src/analyzer/rules/base_rule.dart';
 import 'package:flutter_doctor_ai/src/analyzer/rules/empty_state_rule.dart';
 import 'package:flutter_doctor_ai/src/analyzer/rules/large_build_rule.dart';
@@ -101,34 +102,13 @@ class AnalysisEngine {
   }
 
   /// Extract class/widget statistics from a parsed AST.
+  ///
+  /// Uses a recursive visitor so nested classes are counted, consistent
+  /// with how all analysis rules traverse the AST.
   _FileStats _extractStatistics(CompilationUnit unit) {
-    int classCount = 0;
-    int widgetCount = 0;
-    int statelessCount = 0;
-    int statefulCount = 0;
-
-    for (final declaration in unit.declarations) {
-      if (declaration is ClassDeclaration) {
-        classCount++;
-
-        final superclassBase = declaration.extendsClause?.superclass.name.lexeme;
-
-        if (superclassBase == 'StatelessWidget') {
-          widgetCount++;
-          statelessCount++;
-        } else if (superclassBase == 'StatefulWidget') {
-          widgetCount++;
-          statefulCount++;
-        }
-      }
-    }
-
-    return _FileStats(
-      classCount: classCount,
-      widgetCount: widgetCount,
-      statelessCount: statelessCount,
-      statefulCount: statefulCount,
-    );
+    final visitor = _StatsVisitor();
+    unit.visitChildren(visitor);
+    return visitor.toStats();
   }
 
   /// Analyze a single file (for backward compatibility).
@@ -145,7 +125,39 @@ class AnalysisEngine {
   }
 }
 
-/// Internal class for file statistics.
+/// Visitor that counts classes and widget types recursively.
+class _StatsVisitor extends RecursiveAstVisitor<void> {
+  int classCount = 0;
+  int widgetCount = 0;
+  int statelessCount = 0;
+  int statefulCount = 0;
+
+  @override
+  void visitClassDeclaration(ClassDeclaration node) {
+    classCount++;
+
+    final superclassBase = node.extendsClause?.superclass.name.lexeme;
+
+    if (superclassBase == 'StatelessWidget') {
+      widgetCount++;
+      statelessCount++;
+    } else if (superclassBase == 'StatefulWidget') {
+      widgetCount++;
+      statefulCount++;
+    }
+
+    super.visitClassDeclaration(node);
+  }
+
+  _FileStats toStats() => _FileStats(
+        classCount: classCount,
+        widgetCount: widgetCount,
+        statelessCount: statelessCount,
+        statefulCount: statefulCount,
+      );
+}
+
+/// Internal value class for per-file statistics.
 class _FileStats {
   final int classCount;
   final int widgetCount;

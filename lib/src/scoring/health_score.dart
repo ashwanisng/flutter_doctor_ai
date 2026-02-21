@@ -6,8 +6,6 @@ import 'package:flutter_doctor_ai/src/utils/helpers.dart';
 /// The score is calculated based on the number and severity
 /// of issues found, normalized by project size.
 class HealthScorer {
-  /// Total number of files in the project
-  final int totalFiles;
 
   /// Total lines of code in the project
   final int totalLines;
@@ -16,7 +14,6 @@ class HealthScorer {
   final List<Finding> findings;
 
   const HealthScorer({
-    required this.totalFiles,
     required this.totalLines,
     required this.findings,
   });

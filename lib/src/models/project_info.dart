@@ -21,7 +21,6 @@ class ProjectInfo {
   /// Time taken to scan the project
   final Duration scanTime;
 
-
   /// Total number of files in the project
   int get totalFiles => files.length;
 
@@ -41,7 +40,7 @@ class ProjectInfo {
 /// Represents a single Dart source file.
 class DartFile {
 
-  /// Name of the file (without extension)
+  /// The full name of the file including extension (e.g., 'main.dart').
   final String name;
 
   /// Absolute path to the file
