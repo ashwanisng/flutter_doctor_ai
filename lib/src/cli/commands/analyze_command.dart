@@ -187,20 +187,6 @@ class AnalyzeCommand extends Command<int> {
             findingsByRule.putIfAbsent(finding.rule, () => []).add(finding);
           }
 
-          print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-          print('💯  HEALTH SCORE');
-          print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-          print('');
-          print(
-            '       ${healthScore.emoji}  ${healthScore.score}/100 (Grade: ${healthScore.grade})',
-          );
-          print('');
-          print('  ${healthScore.message}');
-          print(
-            '  Issues per 1K lines: ${healthScore.issuesPerKLOC.toStringAsFixed(1)}',
-          );
-          print('');
-
           print('  By Rule:');
           for (var entry in findingsByRule.entries) {
             final ruleName = entry.key.padRight(25);
@@ -346,6 +332,20 @@ class AnalyzeCommand extends Command<int> {
             }
           }
         }
+
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        print('💯  HEALTH SCORE');
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        print('');
+        print(
+          '       ${healthScore.emoji}  ${healthScore.score}/100 (Grade: ${healthScore.grade})',
+        );
+        print('');
+        print('  ${healthScore.message}');
+        print(
+          '  Issues per 1K lines: ${healthScore.issuesPerKLOC.toStringAsFixed(1)}',
+        );
+        print('');
       }
 
       return 0;
@@ -364,13 +364,18 @@ class AnalyzeCommand extends Command<int> {
 
       final lines = file.readAsLinesSync();
 
-      final start = (lineNumber - 6).clamp(0, lines.length);
-      final end = (lineNumber + 5).clamp(0, lines.length);
+      const int contextLines = 5;
+
+      final targetIndex = lineNumber - 1;
+
+      final start = (targetIndex - contextLines).clamp(0, lines.length);
+      final end = (targetIndex + contextLines + 1).clamp(0, lines.length);
 
       final snippet = <String>[];
       for (var i = start; i < end; i++) {
-        final marker = (i + 1 == lineNumber) ? '>>> ' : '    ';
-        snippet.add('$marker${i + 1}: ${lines[i]}');
+        final displayLine = i + 1; // Convert back to 1-indexed for display
+        final marker = (displayLine == lineNumber) ? '>>> ' : '    ';
+        snippet.add('$marker$displayLine: ${lines[i]}');
       }
 
       return snippet.join('\n');

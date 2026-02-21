@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_doctor_ai/src/utils/helpers.dart';
 import 'ai_provider.dart';
 import 'prompt_builder.dart';
 
@@ -58,7 +59,10 @@ class GeminiProvider implements AIProvider {
     modelsToTry.addAll(_modelFallbacks);
 
     // Remove duplicates while preserving order
-    modelsToTry = modelsToTry.toSet().toList();
+    modelsToTry = deduplicatePreservingOrder([
+      if (model != null) model,
+      ..._modelFallbacks,
+    ]);
 
     Exception? lastError;
 

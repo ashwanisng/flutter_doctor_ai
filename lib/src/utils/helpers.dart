@@ -102,3 +102,19 @@ String? validateApiKey(String provider, String apiKey) {
       return null;
   }
 }
+
+
+/// Remove duplicates from a list while preserving insertion order.
+///
+/// Unlike `list.toSet().toList()`, this explicitly preserves order
+/// without relying on Set implementation details.
+List<T> deduplicatePreservingOrder<T>(List<T> items) {
+  final seen = <T>{};
+  final result = <T>[];
+  for (final item in items) {
+    if (seen.add(item)) {
+      result.add(item);
+    }
+  }
+  return result;
+}
