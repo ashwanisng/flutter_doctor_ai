@@ -53,15 +53,8 @@ class GroqProvider implements AIProvider {
       filePath: filePath,
     );
 
-    // Try with specified model first, then fallbacks
-    List<String> modelsToTry = [];
-    if (model != null) {
-      modelsToTry.add(model);
-    }
-    modelsToTry.addAll(_modelFallbacks);
-
     // Remove duplicates while preserving order
-    modelsToTry = deduplicatePreservingOrder([
+    final modelsToTry = deduplicatePreservingOrder([
       if (model != null) model,
       ..._modelFallbacks,
     ]);

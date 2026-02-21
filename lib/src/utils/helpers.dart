@@ -118,3 +118,15 @@ List<T> deduplicatePreservingOrder<T>(List<T> items) {
   }
   return result;
 }
+
+/// Get priority for severity (lower = higher priority)
+int severityPriority(Severity severity) {
+  switch (severity) {
+    case Severity.error:
+      return 0; // Highest priority
+    case Severity.warning:
+      return 1;
+    case Severity.info:
+      return 2; // Lowest priority
+  }
+}

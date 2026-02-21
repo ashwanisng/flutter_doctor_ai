@@ -4,6 +4,7 @@ import 'package:args/command_runner.dart';
 import 'package:flutter_doctor_ai/flutter_doctor_ai.dart';
 import 'package:flutter_doctor_ai/src/cli/ai_prompt.dart';
 import 'package:flutter_doctor_ai/src/utils/helpers.dart';
+import 'package:path/path.dart' as p;
 
 class AnalyzeCommand extends Command<int> {
   AnalyzeCommand() {
@@ -60,27 +61,15 @@ class AnalyzeCommand extends Command<int> {
     try {
       final projectInfo = await ProjectScanner().scan(projectPath);
 
-      // Parse files
-      final astParser = AstParser();
-      int totalClasses = 0;
-      int totalWidgets = 0;
-      int statelessCount = 0;
-      int statefulCount = 0;
-
-      for (var file in projectInfo.files) {
-        final analysis = astParser.parseFile(file);
-        totalClasses += analysis.classes.length;
-        totalWidgets += analysis.widgets.length;
-
-        for (var widget in analysis.widgets) {
-          if (widget.type == 'StatelessWidget') statelessCount++;
-          if (widget.type == 'StatefulWidget') statefulCount++;
-        }
-      }
-
       // Run analysis
       final engine = AnalysisEngine();
-      final findings = engine.analyzeProject(projectInfo.files);
+      final analysisResult = engine.analyzeProject(projectInfo.files);
+
+      final findings = analysisResult.findings;
+      final totalClasses = analysisResult.totalClasses;
+      final totalWidgets = analysisResult.totalWidgets;
+      final statelessCount = analysisResult.statelessCount;
+      final statefulCount = analysisResult.statefulCount;
 
       // Calculate stats
       int avgLinesPerFile = projectInfo.totalFiles > 0
@@ -164,6 +153,20 @@ class AnalyzeCommand extends Command<int> {
 
         if (findings.isEmpty) {
           print('  ✨ No issues found! Great job!');
+          if (verbose) {
+            print('');
+            print('  📋 Analysis Details:');
+            print('     • Scanned ${projectInfo.totalFiles} files');
+            print(
+                '     • Analyzed ${formatNumber(projectInfo.totalLinesOfCode)} lines of code');
+            print(
+                '     • Checked $totalClasses classes and $totalWidgets widgets');
+            print('');
+            print('  ✅ Rules checked:');
+            for (final rule in engine.rules) {
+              print('     • ${rule.name}: No issues');
+            }
+          }
         } else {
           print('  Found ${findings.length} issue(s)');
           print('');
@@ -216,7 +219,7 @@ class AnalyzeCommand extends Command<int> {
 
             final topOffenders = sortedLargeBuild.take(5);
             for (var finding in topOffenders) {
-              final fileName = finding.filePath.split('/').last;
+              final fileName = p.basename(finding.filePath);
               final lines = extractLineCount(finding.message);
               print('  • $fileName — $lines lines');
             }
@@ -241,7 +244,7 @@ class AnalyzeCommand extends Command<int> {
                         ? '⚠️'
                         : 'ℹ️';
 
-                final fileName = finding.filePath.split('/').last;
+                final fileName = p.basename(finding.filePath);
                 print('  $icon $fileName:${finding.lineNumber}');
                 print('     ${finding.message}');
                 if (finding.suggestion != null) {
@@ -290,11 +293,16 @@ class AnalyzeCommand extends Command<int> {
                 aiConfig.apiKey,
               );
 
-              final topIssues = findings.take(3).toList();
+              final sortedFindings = [...findings]..sort((a, b) {
+                  return severityPriority(a.severity)
+                      .compareTo(severityPriority(b.severity));
+                });
+
+              final topIssues = sortedFindings.take(3).toList();
 
               for (var i = 0; i < topIssues.length; i++) {
                 final finding = topIssues[i];
-                final fileName = finding.filePath.split('/').last;
+                final fileName = p.basename(finding.filePath);
 
                 print(
                   '  [${i + 1}/${topIssues.length}] $fileName:${finding.lineNumber}',

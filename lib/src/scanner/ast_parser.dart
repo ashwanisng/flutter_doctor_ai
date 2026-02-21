@@ -5,6 +5,11 @@ import 'package:analyzer/source/line_info.dart';
 import 'package:flutter_doctor_ai/src/models/analysis_result.dart';
 import 'package:flutter_doctor_ai/src/models/project_info.dart';
 
+/// Parses Dart source files into structured analysis results.
+///
+/// @deprecated Use [AnalysisEngine.analyzeProject] instead, which parses
+/// each file only once for better performance.
+@Deprecated('Use AnalysisEngine.analyzeProject instead')
 class AstParser {
   FileAnalysis parseFile(DartFile file) {
     final parseResult = parseString(content: file.content);
@@ -33,8 +38,8 @@ class _ClassVisitor extends RecursiveAstVisitor<void> {
   void visitClassDeclaration(ClassDeclaration node) {
     String className = node.namePart.typeName.lexeme;
 
-    String? superclass = node.extendsClause?.superclass.toSource();
-
+    // Store the base class name only (e.g. "State" not "State<MyWidget>"),
+    // so ClassInfo.superClass is consistent with .name.lexeme used in rules.
     String? superclassName = node.extendsClause?.superclass.name.lexeme;
 
     final nodeBody = node.body;
@@ -58,7 +63,7 @@ class _ClassVisitor extends RecursiveAstVisitor<void> {
         name: className,
         methods: methods,
         lineNumber: lineNumber,
-        superClass: superclass,
+        superClass: superclassName,
       ),
     );
 

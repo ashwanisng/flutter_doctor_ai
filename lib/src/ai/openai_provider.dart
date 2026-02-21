@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_doctor_ai/flutter_doctor_ai.dart';
 import 'package:flutter_doctor_ai/src/utils/helpers.dart';
+import 'ai_provider.dart';
+import 'prompt_builder.dart';
 
 class OpenAIProvider extends AIProvider {
   final String apiKey;
@@ -50,12 +51,7 @@ class OpenAIProvider extends AIProvider {
       filePath: filePath,
     );
 
-    List<String> modelsToTry = [];
-    if (model != null) {
-      modelsToTry.add(model);
-    }
-    modelsToTry.addAll(_modelFallbacks);
-    modelsToTry = deduplicatePreservingOrder([
+    final modelsToTry = deduplicatePreservingOrder([
       if (model != null) model,
       ..._modelFallbacks,
     ]);

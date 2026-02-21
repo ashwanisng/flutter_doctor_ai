@@ -25,7 +25,7 @@ class ClassInfo {
 
   bool get isStatefulWidget => superClass == 'StatefulWidget';
   bool get isStatelessWidget => superClass == 'StatelessWidget';
-  bool get isState => superClass?.startsWith('State<') ?? false;
+  bool get isState => superClass == 'State';
 }
 
 class WidgetInfo {

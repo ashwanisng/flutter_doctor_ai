@@ -16,11 +16,24 @@ void main(List<String> args) async {
 
   // Run static analysis rules
   final engine = AnalysisEngine();
-  final findings = engine.analyzeProject(projectInfo.files);
-  if (findings.isEmpty) {
+  final result = engine.analyzeProject(projectInfo.files);
+
+  // Print statistics
+  print('');
+  print('Statistics:');
+  print('  Classes: ${result.totalClasses}');
+  print('  Widgets: ${result.totalWidgets}');
+  print('    StatelessWidget: ${result.statelessCount}');
+  print('    StatefulWidget: ${result.statefulCount}');
+  print('');
+
+  // Print findings
+  if (result.findings.isEmpty) {
     print('No issues found!');
   } else {
-    for (final finding in findings) {
+    print('Found ${result.findings.length} issue(s):');
+    print('');
+    for (final finding in result.findings) {
       print('[${finding.severity.name.toUpperCase()}] Rule: ${finding.rule}');
       print('  File: ${finding.filePath} (Line: ${finding.lineNumber})');
       print('  Message: ${finding.message}');
