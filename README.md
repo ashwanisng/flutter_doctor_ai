@@ -265,13 +265,15 @@ Get an API key at [console.anthropic.com](https://console.anthropic.com).
 ```dart
 import 'package:flutter_doctor_ai/flutter_doctor_ai.dart';
 
-final scanner = ProjectScanner();
-final projectInfo = await scanner.scan('/path/to/my_app');
+Future<void> main() async {
+  final scanner = ProjectScanner();
+  final projectInfo = await scanner.scan('/path/to/my_app');
 
-print('Project: ${projectInfo.name} v${projectInfo.version}');
-print('Files:   ${projectInfo.totalFiles}');
-print('Lines:   ${projectInfo.totalLinesOfCode}');
-print('Flutter: ${projectInfo.isFlutterProject}');
+  print('Project: ${projectInfo.name} v${projectInfo.version}');
+  print('Files:   ${projectInfo.totalFiles}');
+  print('Lines:   ${projectInfo.totalLinesOfCode}');
+  print('Flutter: ${projectInfo.isFlutterProject}');
+}
 ```
 
 ### Run analysis
@@ -281,24 +283,26 @@ print('Flutter: ${projectInfo.isFlutterProject}');
 ```dart
 import 'package:flutter_doctor_ai/flutter_doctor_ai.dart';
 
-final scanner = ProjectScanner();
-final projectInfo = await scanner.scan('/path/to/my_app');
+Future<void> main() async {
+  final scanner = ProjectScanner();
+  final projectInfo = await scanner.scan('/path/to/my_app');
 
-final engine = AnalysisEngine();
-final result = engine.analyzeProject(projectInfo.files);
+  final engine = AnalysisEngine();
+  final result = engine.analyzeProject(projectInfo.files);
 
-print('Issues:   ${result.findings.length}');
-print('Classes:  ${result.totalClasses}');
-print('Widgets:  ${result.totalWidgets}');
-print('  StatelessWidget: ${result.statelessCount}');
-print('  StatefulWidget:  ${result.statefulCount}');
+  print('Issues:   ${result.findings.length}');
+  print('Classes:  ${result.totalClasses}');
+  print('Widgets:  ${result.totalWidgets}');
+  print('  StatelessWidget: ${result.statelessCount}');
+  print('  StatefulWidget:  ${result.statefulCount}');
 
-for (final finding in result.findings) {
-  print('[${finding.severity.name.toUpperCase()}] ${finding.rule}');
-  print('  ${finding.filePath}:${finding.lineNumber}');
-  print('  ${finding.message}');
-  if (finding.suggestion != null) {
-    print('  Suggestion: ${finding.suggestion}');
+  for (final finding in result.findings) {
+    print('[${finding.severity.name.toUpperCase()}] ${finding.rule}');
+    print('  ${finding.filePath}:${finding.lineNumber}');
+    print('  ${finding.message}');
+    if (finding.suggestion != null) {
+      print('  Suggestion: ${finding.suggestion}');
+    }
   }
 }
 ```
@@ -306,12 +310,16 @@ for (final finding in result.findings) {
 #### Analyze a single file
 
 ```dart
-final file = DartFile(
-  path: 'lib/main.dart',
-  content: await File('lib/main.dart').readAsString(),
-);
+import 'dart:io';
 
-final findings = engine.analyzeFile(file);
+Future<void> main() async {
+  final file = DartFile(
+    path: 'lib/main.dart',
+    content: await File('lib/main.dart').readAsString(),
+  );
+
+  final findings = engine.analyzeFile(file);
+}
 ```
 
 #### Use a custom set of rules
@@ -331,16 +339,18 @@ final engine = AnalysisEngine(rules: [
 ```dart
 import 'package:flutter_doctor_ai/flutter_doctor_ai.dart';
 
-final scorer = HealthScorer(
-  totalLines: projectInfo.totalLinesOfCode,
-  findings: result.findings,
-);
+void main() {
+  final scorer = HealthScorer(
+    totalLines: projectInfo.totalLinesOfCode,
+    findings: result.findings,
+  );
 
-final health = scorer.calculate();
+  final health = scorer.calculate();
 
-print('Score: ${health.score}/100 (${health.grade})');
-print('${health.emoji} ${health.message}');
-print('Issues/KLOC: ${health.issuesPerKLOC.toStringAsFixed(1)}');
+  print('Score: ${health.score}/100 (${health.grade})');
+  print('${health.emoji} ${health.message}');
+  print('Issues/KLOC: ${health.issuesPerKLOC.toStringAsFixed(1)}');
+}
 ```
 
 ---
