@@ -90,7 +90,7 @@ Add the package to your `pubspec.yaml` to use it programmatically:
 
 ```yaml
 dependencies:
-  flutter_doctor_ai: ^0.1.0
+  flutter_doctor_ai: ^0.2.0
 ```
 
 ```bash
