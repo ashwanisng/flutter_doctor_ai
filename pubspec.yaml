@@ -1,6 +1,6 @@
 name: flutter_doctor_ai
 description: AI-powered Flutter code analysis CLI tool. Detects issues like large build methods, missing dispose, empty setState, and provides AI-powered fix suggestions.
-version: 0.1.0
+version: 0.2.0
 
 homepage: https://github.com/ashwanisng/flutter_doctor_ai
 repository: https://github.com/ashwanisng/flutter_doctor_ai
@@ -22,7 +22,7 @@ executables:
 
 dependencies:
   args: ^2.4.2
-  analyzer: ^10.1.0
+  analyzer: ^14.1.0
   path: ^1.8.3
   yaml: ^3.1.2
   dio: ^5.3.2
