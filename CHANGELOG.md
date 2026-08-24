@@ -1,3 +1,10 @@
+## 0.2.0
+
+- Upgrade `analyzer` dependency to `^14.1.0`
+- Add CI workflow to automatically publish to pub.dev on version bumps merged to `main`
+- Remove unused imports from `missing_dispose_rule.dart` and `missing_mounted_check_rule.dart`
+- Restructure README code examples to wrap `await`/`print` usage in `main()` functions
+
 ## 0.1.0
 
 Initial release.
